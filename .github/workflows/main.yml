@@ -30,7 +30,7 @@ jobs:
       - name: Download M1 ${{ matrix.side }}
         run: |
           mkdir -p out
-          npx -y dukascopy-node@latest -i ${{ matrix.inst }} -from ${{ inputs.start }} -to ${{ inputs.end }} \
+          npx --yes dukascopy-node@latest -i ${{ matrix.inst }} -from ${{ inputs.start }} -to ${{ inputs.end }} \
             -t m1 -p ${{ matrix.side }} -f csv -v true -dir out -bs 10 -bp 1000 -r 5
           ls -la out
       - name: Compress
