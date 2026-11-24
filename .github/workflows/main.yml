@@ -1,0 +1,42 @@
+name: Dukascopy indices
+
+on:
+  workflow_dispatch:
+    inputs:
+      instruments:
+        description: 'List in this exact format'
+        default: '["usa30idxusd","usatechidxusd","usa500idxusd","deuidxeur","gbridxgbp","jpnidxjpy","eusidxeur"]'
+      start:
+        description: "Start date"
+        default: "2023-01-01"
+      end:
+        description: "End date"
+        default: "2026-10-30"
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        inst: ${{ fromJSON(inputs.instruments) }}
+        side: ["bid", "ask"]
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Download M1 ${{ matrix.side }}
+        run: |
+          mkdir -p out
+          npx -y dukascopy-node@latest -i ${{ matrix.inst }} -from ${{ inputs.start }} -to ${{ inputs.end }} \
+            -t m1 -p ${{ matrix.side }} -f csv -v true -dir out -bs 10 -bp 1000 -r 5
+          ls -la out
+      - name: Compress
+        run: cd out && for f in *.csv; do [ -f "$f" ] && xz -9 -T0 "$f"; done; ls -la
+      - uses: actions/upload-artifact@v4
+        with:
+          name: duka_${{ matrix.inst }}_${{ matrix.side }}
+          path: out/
+          if-no-files-found: error
